@@ -1,0 +1,102 @@
+100 100
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 
+fffff 0 68 99 32
+asdfd 0 4
+fffff 0 25 27 3
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+fffff 0 46 62 17
+fffff 0 62 85 24
+fffff 0 43 56 14
+asdfd 0 4
+fffff 0 5 67 63
+fffff 0 93 99 7
+fffff 0 17 79 63
+fffff 0 48 97 50
+fffff 0 39 48 10
+asdfd 0 4
+fffff 0 100 100 1
+asdfd 0 4
+fffff 0 12 95 84
+fffff 0 74 94 21
+fffff 0 12 52 41
+asdfd 0 4
+fffff 0 45 59 15
+fffff 0 38 45 8
+fffff 0 42 77 36
+asdfd 0 4
+asdfd 0 4
+fffff 0 91 93 3
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+fffff 0 91 100 10
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+fffff 0 94 100 7
+fffff 0 24 84 61
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+fffff 0 9 25 17
+fffff 0 27 28 2
+fffff 0 39 99 61
+asdfd 0 4
+fffff 0 42 96 55
+fffff 0 40 52 13
+asdfd 0 4
+asdfd 0 4
+fffff 0 7 96 90
+asdfd 0 4
+fffff 0 46 75 30
+asdfd 0 4
+asdfd 0 4
+fffff 0 78 80 3
+fffff 0 13 63 51
+asdfd 0 4
+fffff 0 37 56 20
+fffff 0 56 60 5
+fffff 0 53 91 39
+asdfd 0 4
+fffff 0 25 83 59
+asdfd 0 4
+fffff 0 92 99 8
+fffff 0 58 90 33
+fffff 0 84 86 3
+fffff 0 10 31 22
+fffff 0 89 91 3
+asdfd 0 4
+asdfd 0 4
+asdfd 0 4
+fffff 0 69 73 5
+fffff 0 63 84 22
+asdfd 0 4
+fffff 0 25 42 18
+asdfd 0 4
+fffff 0 96 97 2
+asdfd 0 4
+asdfd 0 4
+fffff 0 37 67 31
+asdfd 0 4
+asdfd 0 4
+fffff 0 49 56 8
+asdfd 0 4
+asdfd 0 4
+fffff 0 35 88 54
+fffff 0 19 77 59
+asdfd 0 4
+asdfd 0 4
+fffff 0 68 100 33
+fffff 0 49 68 20
+fffff 0 22 33 12
+fffff 0 14 45 32
+fffff 0 17 52 36
+fffff 0 1 50 50

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Project</title>
+        <meta charset='utf-8'/>
+		
+		<link rel="stylesheet" href="libraries/treant-js/Treant.css" type="text/css" />
+		<link rel="stylesheet" href="libraries/bootstrap-select-1.12.1/dist/css/bootstrap-select.min.css">
+		<link rel = "stylesheet" type = "text/css" href = "libraries/bootstrap-3.3.5-dist/css/bootstrap.min.css"></link>
+		<link rel = "stylesheet" type = "text/css" href = "css.css"></link>
+		
+		<script src="libraries/jquery/dist/jquery.min.js"></script>
+		<script src="libraries/treant-js/vendor/raphael.js"></script>
+		<script src="libraries/treant-js/Treant.js"></script>
+		<script src="libraries/treant-js/vendor/perfect-scrollbar/perfect-scrollbar.js"></script>
+		<script src="libraries/bootstrap-3.3.5-dist/js/bootstrap.min.js"></script>
+		<script src="libraries/bootstrap-select-1.12.1/dist/js/bootstrap-select.min.js"></script>
+		<script src="libraries/Treap.js"></script>
+		<script src="libraries/visualisation.js"></script>
+		<script src="js.js"></script>
+	</head>
+	<body>
+		<div id = "add_array" style = "position: absolute; width: 40%; left: 30%; top: 40%; height: 100px;">
+			<input id = "write_array" class="form-control" placeholder = "Write array" title = "Write array"
+					style = "position: absolute; width: 80%; left: 10%; top: 7px;"
+					value = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30">
+			<button id = "set_array" class = "btn btn-success" onclick = "set_array()" style = "position: absolute; left: 40%; width: 20%; bottom: 7px;">Set array</button>
+		</div>
+		<div id = "header" style = "visibility: hidden; position: absolute; top: 7px; left: 7px; right: 7px; height: 1000px;">
+			<div class="input-group" style = "width: 60px; float: left;">
+				<select id = "versions" class = "selectpicker" style = "width: 60px"; onchange = "update_treap()">
+				</select>
+			</div>
+			<input id = "start_position" class="form-control text" placeholder = "Start position" title = "Start position">
+			<input id = "finish_position" class="form-control text" placeholder = "Finish position" title = "Finish position">
+			<input id = "length" class="form-control text" placeholder = "Length" title = "Length">
+			<button id = "move" class = "btt btn btn-success" onclick = "start_move()">Move</button>
+			<button id = "prev_tic" class = "btt btn btn-default" onclick = "prev_tic()">Previos tic</button>
+			<button id = "next_tic" class = "btt btn btn-default" onclick = "next_tic()">Next tic</button>
+			<label name = "review" class = "rb" for = "auto">
+				<input id = "auto" name = "review" type = "radio" onchange = "review_click()">
+				Auto review
+			</label>
+			<label name = "review" class = "rb" for = "step">
+				<input id = "step" name = "review" type = "radio" onchange = "review_click()" checked>
+				Review step by step
+			</label>
+			<label name = "review" class = "rb" for = "skip">
+				<input id = "skip" name = "review" type = "radio" onchange = "review_click()">
+				Go to last version
+			</label>
+		</div>
+		<div id = "charts" style = "visibility: hidden;">
+			<div class="chart" id="cnv"> </div>
+			<div class="chart" id="cnvup" style = "visibility: hidden;"> </div>
+			<div class="chart" id="cnvdown" style = "visibility: hidden;"> </div>
+		</div>
+	</body>
+</html>
