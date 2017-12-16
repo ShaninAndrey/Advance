@@ -3,10 +3,10 @@ import math
 
 from DataType import Point, Event, Arc, Segment, PriorityQueue
 
-# Source: (C++) http://www.cs.hmc.edu/~mbrubeck/voronoi.html
-
 class Voronoi:
-    def __init__(self, points):
+    def __init__(self, points=None):
+        if not points:
+            return
         self.output = [] # list of line segment
         self.arc = None  # binary tree for parabola arcs
 
@@ -38,26 +38,25 @@ class Voronoi:
         self.y1 = self.y1 + dy
 
     def process(self):
-        while not self.points.empty():
+        if not self.points.empty():
             if not self.event.empty() and (self.event.top().x <= self.points.top().x):
-                self.process_event() # handle circle event
+                return self.process_event() # handle circle event
             else:
-                self.process_point() # handle site event
-            return True
+                return self.process_point() # handle site event
 
         # after all points, process remaining circle events
         while not self.event.empty():
-            self.process_event()
-            return True
+            return self.process_event()
 
         self.finish_edges()
-        return False
+        return None
 
     def process_point(self):
         # get next event from site pq
         p = self.points.pop()
         # add new arc (parabola)
         self.arc_insert(p)
+        return p
 
     def process_event(self):
         # get next event from circle pq
@@ -84,6 +83,8 @@ class Voronoi:
             # recheck circle events on either side of p
             if a.pprev is not None: self.check_circle_event(a.pprev, e.x)
             if a.pnext is not None: self.check_circle_event(a.pnext, e.x)
+
+        return e
 
     def arc_insert(self, p):
         if self.arc is None:
@@ -135,7 +136,7 @@ class Voronoi:
             
             # insert new segment between p and i
             x = self.x0
-            y = (i.pnext.p.y + i.p.y) / 2.0;
+            y = (i.pnext.p.y + i.p.y) / 2.0
             start = Point(x, y)
 
             seg = Segment(start)
@@ -250,3 +251,50 @@ class Voronoi:
             if p0 and p1:
                 res.append((p0.x, p0.y, p1.x, p1.y))
         return res
+
+    def get_points(self, x=123123123):
+        res = []
+        for x1, i, p in self.points.pq:
+            if p.x < x:
+                res.append(p)
+        return res
+
+    def get_events(self, x=123123123):
+        res = []
+        for x1, i, e in self.points.pq:
+            if e.p.x < x:
+                res.append(e.p)
+        return res
+
+    def get_arcs(self):
+        res = []
+        i = self.arc
+        while i is not None:
+            res.append(i)
+            i = i.pnext
+        return res
+
+    def copy(self):
+        vp = Voronoi()
+        vp.output = []
+        for out in self.output:
+            vp.output.append(out.copy())
+        vp.arc = self.arc.copy()
+        i = vp.arc
+        while i is not None:
+            if (i.s0):
+                vp.output.append(i.s0)
+            if (i.s1):
+                vp.output.append(i.s1)
+            i = i.pnext
+        vp.x0 = self.x0
+        vp.x1 = self.x1
+        vp.y0 = self.y0
+        vp.y1 = self.y1
+        dx = (vp.x1 - vp.x0 + 1) / 5.0
+        dy = (vp.y1 - vp.y0 + 1) / 5.0
+        vp.x0 = vp.x0 - dx
+        vp.x1 = vp.x1 + dx
+        vp.y0 = vp.y0 - dy
+        vp.y1 = vp.y1 + dy
+        return vp

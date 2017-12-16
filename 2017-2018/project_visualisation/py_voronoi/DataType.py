@@ -2,12 +2,18 @@ import heapq
 import itertools
 
 class Point:
-   x = 0.0
-   y = 0.0
-   
-   def __init__(self, x, y):
-       self.x = x
-       self.y = y
+    x = 0.0
+    y = 0.0
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def __str__(self):
+        return "(" + str(self.x) + ", " + str(self.y) + ")"
+    def __repr__(self):
+        return str(self)
+    def copy(self):
+        return Point(self.x, self.y)
 
 class Event:
     x = 0.0
@@ -20,6 +26,11 @@ class Event:
         self.p = p
         self.a = a
         self.valid = True
+
+    def __str__(self):
+        return "(" + str(self.x) + ", " + str(self.p) + ", " + str(self.a) + ", " + str(self.valid) + ")"
+    def __repr__(self):
+        return str(self)
 
 class Arc:
     p = None
@@ -37,6 +48,23 @@ class Arc:
         self.s0 = None
         self.s1 = None
 
+    def __str__(self):
+        return "Arc(" + str(self.s0) + ", " + str(self.s1) + ")"
+
+    def copy(self, a=None):
+        arc = Arc(self.p.copy())
+        arc.pprev = a
+        if self.pnext:
+            arc.pnext = self.pnext.copy(arc)
+            arc.s1 = arc.pnext.s0
+        else:
+            if (self.s1):
+                arc.s1 = self.s1.copy()
+        if (self.s0):
+            arc.s0 = self.s0.copy()
+        return arc
+
+
 class Segment:
     start = None
     end = None
@@ -50,7 +78,14 @@ class Segment:
     def finish(self, p):
         if self.done: return
         self.end = p
-        self.done = True        
+        self.done = True
+
+    def copy(self):
+        segm = Segment(self.start.copy())
+        if (self.end):
+            segm.end = self.end.copy()
+        segm.done = self.done
+        return segm
 
 class PriorityQueue:
     def __init__(self):
@@ -91,3 +126,12 @@ class PriorityQueue:
     def empty(self):
         return not self.pq
             
+    def __str__(self):
+        return self.pq.__str__()
+        str = "("
+        for item in self.pq:
+            str = str + str(item) + ", "
+        return str[:-2] + ")"
+
+    def __repr__(self):
+        return str(self)
