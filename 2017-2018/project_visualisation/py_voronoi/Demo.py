@@ -1,6 +1,7 @@
 import Tkinter as tk
-from DataType import *
+from DataType import Point
 from Voronoi import Voronoi
+from random import randint
 
 class MainWindow:
     points = []
@@ -10,6 +11,9 @@ class MainWindow:
     beach_line = []
     # radius of drawn points on canvas
     RADIUS = 3
+    random_points = 20
+    width = 1000
+    height = 600
 
     # flag to lock the canvas when drawn
     LOCK_FLAG = False
@@ -38,10 +42,10 @@ class MainWindow:
         self.frmMain = tk.Frame(self.master, relief=tk.RAISED, borderwidth=1)
         self.frmMain.pack(fill=tk.BOTH, expand=1)
 
-        self.w = tk.Canvas(self.frmMain, width=1000, height=600)
+        self.w = tk.Canvas(self.frmMain, width=self.width, height=self.height)
         self.w.config(background='white')
         self.w.bind('<Double-1>', self.onDoubleClick)
-        self.w.pack()       
+        self.w.pack()
 
         self.frmButton = tk.Frame(self.master)
         self.frmButton.pack()
@@ -54,6 +58,17 @@ class MainWindow:
 
         self.btnNextStep = tk.Button(self.frmButton, text="Next step", width=25, command=self.nextStep)
         self.btnNextStep.pack(side=tk.LEFT)
+
+        self.btnRndomPoints = tk.Button(self.frmButton, text="Create random points", width=25, command=self.createRandomPoints)
+        self.btnRndomPoints.pack(side=tk.LEFT)
+
+    def createRandomPoints(self):
+        self.onClickClear()
+        for i in range(self.random_points):
+            x = randint(30, self.width - 30)
+            y = randint(30, self.height - 30)
+            self.w.create_oval(x - self.RADIUS, y - self.RADIUS, x + self.RADIUS,
+                               y + self.RADIUS, fill="black")
 
     def nextStep(self):
         if not self.LOCK_FLAG:
@@ -77,11 +92,12 @@ class MainWindow:
                 self.drawBeachLine(points, p.x)
                 self.drawLinesVSBeachLine(self.real_output)
 
-
     def onClickCalculate(self):
         if not self.LOCK_FLAG:
             self.LOCK_FLAG = True
             self.processPoints()
+        self.LOCK_NEXT = True
+        self.clear_lines()
         self.drawLinesOnCanvas(self.real_output)
 
     def onClickClear(self):
@@ -95,14 +111,25 @@ class MainWindow:
         if not self.LOCK_FLAG:
             self.w.create_oval(event.x-self.RADIUS, event.y-self.RADIUS, event.x+self.RADIUS, event.y+self.RADIUS, fill="black")
 
+
+
+    def drawLine(self, line, fill):
+        try:
+            self.to_delete.append(self.w.create_line(line[0].x, line[0].y, line[1].x, line[1].y, fill=fill))
+        except:
+            try:
+                self.to_delete.append(self.w.create_line(line[0][0], line[0][1], line[1][0], line[1][1], fill=fill))
+            except:
+                self.to_delete.append(self.w.create_line(line[0], line[1], line[2], line[3], fill=fill))
+
     def drawBeachLine(self, points, x2, fill="black"):
         last_x = 0.
         self.beach_line = []
-        for y in range(self.w.winfo_height()):
+        for y in range(self.height):
             x = 0.
             for point in points:
                 x = max(x, (x2 ** 2 - point.x ** 2 - (point.y - y) ** 2) / 2. / (x2 - point.x))
-            self.to_delete.append(self.w.create_line(x, y, last_x, y - 1, fill=fill))
+            self.drawLine((x, y, last_x, y - 1), fill)
             last_x = x
             self.beach_line.append(x)
 
@@ -110,16 +137,43 @@ class MainWindow:
         for l in lines:
             if (l[1] > l[3]):
                 l = (l[2], l[3], l[0], l[1])
+            if (l[1] < 0):
+                l = ((l[2] - l[0]) * (0 - l[1]) / (l[3] - l[1]) + l[0], 0, l[2], l[3])
+            if (l[3] > self.height):
+                l = (l[0], l[1], (l[2] - l[0]) * (self.height - l[1]) / (l[3] - l[1]) + l[0], self.height)
+
             last_x = l[0]
-            for i in range(max(0, int(l[1]) + 1), min(int(l[3]) + 1, self.w.winfo_height())):
+            fl = False
+            for i in range(max(0, int(l[1]) + 1), min(int(l[3]) + 1, self.height)):
                 x = (l[2] - l[0]) * (i - l[1]) / (l[3] - l[1]) + l[0]
-                if (x <= self.beach_line[i] and last_x <= self.beach_line[i - 1]):
-                    self.to_delete.append(self.w.create_line(last_x, i - 1, x, i, fill=fill))
-                elif (x <= self.beach_line[i]):
-                    self.to_delete.append(self.w.create_line(self.beach_line[i - 1], i - 1, x, i, fill=fill))
-                elif (last_x <= self.beach_line[i - 1]):
-                    self.to_delete.append(self.w.create_line(last_x, i - 1, self.beach_line[i], i, fill=fill))
+                if (last_x <= self.beach_line[i - 1] and x > self.beach_line[i] or
+                    last_x > self.beach_line[i - 1] and x <= self.beach_line[i]):
+                    fl = True
+                    if (last_x <= self.beach_line[i - 1]):
+                        self.drawLine(((l[0], l[1]), min([(self.beach_line[i - 1], i - 1),
+                                                          (self.beach_line[i + 1], i + 1),
+                                                          (self.beach_line[i], i)])), fill)
+                    else:
+                        self.drawLine(((l[2], l[3]), min([(self.beach_line[i - 1], i - 1),
+                                                          (self.beach_line[i + 1], i + 1),
+                                                          (self.beach_line[i], i)])), fill)
+
+                    break
+                if x > self.beach_line[i]:
+                    fl = True
                 last_x = x
+            if l[1] == l[3]:
+                if l[0] > self.beach_line[int(l[1])] and l[2] > self.beach_line[int(l[1])]:
+                    continue
+                if l[0] <= self.beach_line[int(l[1])] and l[2] <= self.beach_line[int(l[1])]:
+                    self.drawLine(l, fill)
+                elif l[0] <= self.beach_line[int(l[1])]:
+                    self.drawLine(((l[0], l[1]), (self.beach_line[int(l[3])], l[3])), fill)
+                else:
+                    self.drawLine(((l[2], l[3]), (self.beach_line[int(l[1])], l[1])), fill)
+                continue
+            if not fl:
+                self.drawLine(l, fill)
 
     def drawPointsOnCanvas(self, points, fill="red"):
         for p in points:
@@ -132,7 +186,7 @@ class MainWindow:
 
     def drawLinesOnCanvas(self, lines, fill="blue"):
         for l in lines:
-            self.to_delete.append(self.w.create_line(l[0], l[1], l[2], l[3], fill=fill))
+            self.drawLine(l, fill)
 
 def main(): 
     root = tk.Tk()
