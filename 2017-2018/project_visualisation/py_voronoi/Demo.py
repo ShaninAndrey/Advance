@@ -3,12 +3,43 @@ from DataType import Point
 from Voronoi import Voronoi
 from random import randint
 
+class Const:
+    @staticmethod
+    def GET_BEACH_LINE_COLOR():
+        return "black"
+    @staticmethod
+    def GET_BORDER_COLOR():
+        return "red"
+    @staticmethod
+    def GET_CONST_POINTS_COLOR():
+        return "black"
+    @staticmethod
+    def GET_EDGES_COLOR():
+        return "blue"
+    @staticmethod
+    def GET_POINT_TYPE():
+        return 0
+    @staticmethod
+    def GET_LINE_TYPE():
+        return 1
+
+class DrawedItem:
+    __slots__ = ['item', 'type', 'color']
+    # type: 0 - point, 1 - line, 2 - oval
+    def __init__(self, item, type, fill):
+        self.type = type
+        self.item = item
+        self.color = fill
+
+class History:
+    history = []
+
+
 class MainWindow:
-    points = []
+    history = []
+    curr_frame = -1
     to_delete = []
     vp = Voronoi([])
-    real_output = []
-    beach_line = []
     # radius of drawn points on canvas
     RADIUS = 3
     random_points = 20
@@ -23,16 +54,13 @@ class MainWindow:
         for item in self.to_delete:
             self.w.delete(item)
 
-    def processPoints(self):
+    def getPoints(self):
         pObj = self.w.find_all()
-        self.points = []
+        points = []
         for p in pObj:
             coord = self.w.coords(p)
-            self.points.append((coord[0] + self.RADIUS, coord[1] + self.RADIUS))
-        vp = Voronoi(self.points)
-        while vp.process():
-            asd = 0
-        self.real_output = vp.get_output()
+            points.append((coord[0] + self.RADIUS, coord[1] + self.RADIUS))
+        return points
 
 
     def __init__(self, master):
@@ -62,6 +90,38 @@ class MainWindow:
         self.btnRndomPoints = tk.Button(self.frmButton, text="Create random points", width=25, command=self.createRandomPoints)
         self.btnRndomPoints.pack(side=tk.LEFT)
 
+    def getFinalOutput(self, points):
+        vp = Voronoi(points)
+        while vp.process():
+            asd = 0
+        return vp.get_output()
+
+    def getHistory(self):
+        const_points = self.getPoints()
+        final_output = self.getFinalOutput(const_points)
+        vp = Voronoi(const_points)
+        p = True
+        history = []
+        while p is not None:
+            if p == True:
+                p = vp.process()
+                continue
+            points = []
+            for point in const_points:
+                if point[0] < p.x:
+                    points.append(Point(point[0], point[1]))
+            history.append([])
+            history[-1].append(DrawedItem((p.x, -123123, p.x, 123123), Const.GET_LINE_TYPE(), Const.GET_BORDER_COLOR()))
+            beach_line = self.appendBeachLine(history[-1], points, p.x)
+            self.appendLinesVSBeachLine(history[-1], final_output, beach_line)
+
+            p = vp.process()
+
+        history.append([])
+        self.appendFinalLines(history[-1], final_output)
+
+        return history
+
     def createRandomPoints(self):
         self.onClickClear()
         for i in range(self.random_points):
@@ -69,36 +129,20 @@ class MainWindow:
             y = randint(30, self.height - 30)
             self.w.create_oval(x - self.RADIUS, y - self.RADIUS, x + self.RADIUS,
                                y + self.RADIUS, fill="black")
+        self.history = self.getHistory()
+        self.curr_frame = -1
 
     def nextStep(self):
-        if not self.LOCK_FLAG:
-            self.LOCK_FLAG = True
-            self.processPoints()
-            self.vp = Voronoi(self.points)
-
-        if not self.LOCK_NEXT:
-            p = self.vp.process()
+        if self.curr_frame + 1 < len(self.history):
+            self.curr_frame += 1
             self.clear_lines()
-
-            if not p:
-                self.LOCK_NEXT = True
-                self.drawLinesOnCanvas(self.real_output)
-            else:
-                self.drawLinesOnCanvas([(p.x, -123123, p.x, 123123)], "red")
-                points = []
-                for point in self.points:
-                    if point[0] < p.x:
-                        points.append(Point(point[0], point[1]))
-                self.drawBeachLine(points, p.x)
-                self.drawLinesVSBeachLine(self.real_output)
+            self.drawFrame(self.history[self.curr_frame])
 
     def onClickCalculate(self):
-        if not self.LOCK_FLAG:
-            self.LOCK_FLAG = True
-            self.processPoints()
-        self.LOCK_NEXT = True
+        self.LOCK_FLAG = True
+        self.curr_frame = len(self.history) - 1
         self.clear_lines()
-        self.drawLinesOnCanvas(self.real_output)
+        self.drawFrame(self.history[self.curr_frame])
 
     def onClickClear(self):
         self.LOCK_FLAG = False
@@ -113,6 +157,27 @@ class MainWindow:
 
 
 
+    def drawFrame(self, items):
+        for item in items:
+            if item.type == Const.GET_POINT_TYPE():
+                self.drawPoint(item.item, item.color)
+            else:
+                self.drawLine(item.item, item.color)
+
+    def drawPoint(self, point, fill):
+        try:
+            self.to_delete.append(self.w.create_oval(point[0] - self.RADIUS,
+                                                     point[1] - self.RADIUS,
+                                                     point[0] - self.RADIUS,
+                                                     point[1] - self.RADIUS,
+                                                     fill=fill))
+        except:
+            self.to_delete.append(self.w.create_oval(point.x - self.RADIUS,
+                                                     point.y - self.RADIUS,
+                                                     point.x - self.RADIUS,
+                                                     point.y - self.RADIUS,
+                                                     fill=fill))
+
     def drawLine(self, line, fill):
         try:
             self.to_delete.append(self.w.create_line(line[0].x, line[0].y, line[1].x, line[1].y, fill=fill))
@@ -122,71 +187,73 @@ class MainWindow:
             except:
                 self.to_delete.append(self.w.create_line(line[0], line[1], line[2], line[3], fill=fill))
 
-    def drawBeachLine(self, points, x2, fill="black"):
+
+
+    def appendBeachLine(self, history, points, x2):
         last_x = 0.
-        self.beach_line = []
+        beach_line = []
         for y in range(self.height):
             x = 0.
             for point in points:
                 x = max(x, (x2 ** 2 - point.x ** 2 - (point.y - y) ** 2) / 2. / (x2 - point.x))
-            self.drawLine((x, y, last_x, y - 1), fill)
+            history.append(DrawedItem((x, y, last_x, y - 1),
+                                               Const.GET_LINE_TYPE(),
+                                               Const.GET_BEACH_LINE_COLOR()))
             last_x = x
-            self.beach_line.append(x)
+            beach_line.append(x)
+        return beach_line
 
-    def drawLinesVSBeachLine(self, lines, fill="blue"):
+    def appendLinesVSBeachLine(self, history, lines, beach_line):
+        height = len(beach_line)
         for l in lines:
             if (l[1] > l[3]):
                 l = (l[2], l[3], l[0], l[1])
             if (l[1] < 0):
                 l = ((l[2] - l[0]) * (0 - l[1]) / (l[3] - l[1]) + l[0], 0, l[2], l[3])
-            if (l[3] > self.height):
-                l = (l[0], l[1], (l[2] - l[0]) * (self.height - l[1]) / (l[3] - l[1]) + l[0], self.height)
+            if (l[3] > height):
+                l = (l[0], l[1], (l[2] - l[0]) * (height - l[1]) / (l[3] - l[1]) + l[0], height)
 
             last_x = l[0]
             fl = False
-            for i in range(max(0, int(l[1]) + 1), min(int(l[3]) + 1, self.height)):
+            for i in range(max(0, int(l[1]) + 1), min(int(l[3]) + 1, height)):
                 x = (l[2] - l[0]) * (i - l[1]) / (l[3] - l[1]) + l[0]
-                if (last_x <= self.beach_line[i - 1] and x > self.beach_line[i] or
-                    last_x > self.beach_line[i - 1] and x <= self.beach_line[i]):
+                if (last_x <= beach_line[i - 1] and x > beach_line[i] or
+                    last_x > beach_line[i - 1] and x <= beach_line[i]):
                     fl = True
-                    if (last_x <= self.beach_line[i - 1]):
-                        self.drawLine(((l[0], l[1]), min([(self.beach_line[i - 1], i - 1),
-                                                          (self.beach_line[i + 1], i + 1),
-                                                          (self.beach_line[i], i)])), fill)
+                    mn = (beach_line[i], i)
+                    if (i):
+                        mn = min(mn, (beach_line[i - 1], i - 1))
+                    if (i + 1 < height):
+                        mn = min(mn, (beach_line[i + 1], i + 1))
+                    if (last_x <= beach_line[i - 1]):
+                        history.append(DrawedItem(((l[0], l[1]), mn), Const.GET_LINE_TYPE(), Const.GET_EDGES_COLOR()))
                     else:
-                        self.drawLine(((l[2], l[3]), min([(self.beach_line[i - 1], i - 1),
-                                                          (self.beach_line[i + 1], i + 1),
-                                                          (self.beach_line[i], i)])), fill)
+                        history.append(DrawedItem(((l[2], l[3]), mn), Const.GET_LINE_TYPE(), Const.GET_EDGES_COLOR()))
 
                     break
-                if x > self.beach_line[i]:
+                if x > beach_line[i]:
                     fl = True
                 last_x = x
             if l[1] == l[3]:
-                if l[0] > self.beach_line[int(l[1])] and l[2] > self.beach_line[int(l[1])]:
+                if l[0] > beach_line[int(l[1])] and l[2] > beach_line[int(l[1])]:
                     continue
-                if l[0] <= self.beach_line[int(l[1])] and l[2] <= self.beach_line[int(l[1])]:
-                    self.drawLine(l, fill)
-                elif l[0] <= self.beach_line[int(l[1])]:
-                    self.drawLine(((l[0], l[1]), (self.beach_line[int(l[3])], l[3])), fill)
+                if l[0] <= beach_line[int(l[1])] and l[2] <= beach_line[int(l[1])]:
+                    history.append(DrawedItem(l, Const.GET_LINE_TYPE(), Const.GET_EDGES_COLOR()))
+                elif l[0] <= beach_line[int(l[1])]:
+                    history.append(DrawedItem(((l[0], l[1]), (beach_line[int(l[3])], l[3])),
+                                                   Const.GET_LINE_TYPE(),
+                                                   Const.GET_EDGES_COLOR()))
                 else:
-                    self.drawLine(((l[2], l[3]), (self.beach_line[int(l[1])], l[1])), fill)
+                    history.append(DrawedItem(((l[2], l[3]), (beach_line[int(l[1])], l[1])),
+                                                   Const.GET_LINE_TYPE(),
+                                                   Const.GET_EDGES_COLOR()))
                 continue
             if not fl:
-                self.drawLine(l, fill)
+                history.append(DrawedItem(l, Const.GET_LINE_TYPE(), Const.GET_EDGES_COLOR()))
 
-    def drawPointsOnCanvas(self, points, fill="red"):
-        for p in points:
-            self.to_delete.append(self.w.create_oval(p.x - self.RADIUS,
-                                                     p.y - self.RADIUS,
-                                                     p.x + self.RADIUS,
-                                                     p.y + self.RADIUS,
-                                                     fill=fill
-                                                     ))
-
-    def drawLinesOnCanvas(self, lines, fill="blue"):
+    def appendFinalLines(self, history, lines):
         for l in lines:
-            self.drawLine(l, fill)
+            history.append(DrawedItem(l, Const.GET_LINE_TYPE(), Const.GET_EDGES_COLOR()))
 
 def main(): 
     root = tk.Tk()
