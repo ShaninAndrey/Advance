@@ -10,6 +10,7 @@ class MainWindow:
 
     # flag to lock the canvas when drawn
     LOCK_FLAG = False
+    LOCK_NEXT = False
 
     def getPoints(self):
         pObj = self.w.find_all()
@@ -25,7 +26,7 @@ class MainWindow:
         self.frmMain = tk.Frame(self.master, relief=tk.RAISED, borderwidth=1)
         self.frmMain.pack(fill=tk.BOTH, expand=1)
 
-        self.w = tk.Canvas(self.frmMain, width=500, height=500)
+        self.w = tk.Canvas(self.frmMain, width=1000, height=600)
         self.w.config(background='white')
         self.w.bind('<Double-1>', self.onDoubleClick)
         self.w.pack()       
@@ -45,34 +46,35 @@ class MainWindow:
     def nextStep(self):
         if not self.LOCK_FLAG:
             self.LOCK_FLAG = True
+            self.getPoints()
+            self.vp = Voronoi(self.points)
 
-            if len(self.points) < 1:
-                self.getPoints()
-
-            vp = Voronoi(self.points)
+        if not self.LOCK_NEXT:
             print(self.points)
-            while (vp.process()):
-                lines = vp.get_output()
-                print(lines)
-                self.drawLinesOnCanvas(lines)
+            if not self.vp.process():
+                self.LOCK_NEXT = True
+            lines = self.vp.get_output()
+            print(lines)
+            self.drawLinesOnCanvas(lines)
 
 
     def onClickCalculate(self):
         if not self.LOCK_FLAG:
             self.LOCK_FLAG = True
-
-            if len(self.points) < 1:
-                self.getPoints()
-
+            self.getPoints()
             self.vp = Voronoi(self.points)
             print (self.points)
+
+        if not self.LOCK_NEXT:
             while (self.vp.process()):
                 asd = 0
+            self.LOCK_NEXT = True
 
             self.drawLinesOnCanvas(self.vp.get_output())
 
     def onClickClear(self):
         self.LOCK_FLAG = False
+        self.LOCK_NEXT = False
         self.points = []
         self.w.delete(tk.ALL)
 
