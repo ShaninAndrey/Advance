@@ -4,9 +4,7 @@ import math
 from DataType import Point, Event, Arc, Segment, PriorityQueue
 
 class Voronoi:
-    def __init__(self, points=None):
-        if not points:
-            return
+    def __init__(self, points):
         self.output = [] # list of line segment
         self.arc = None  # binary tree for parabola arcs
 
@@ -251,50 +249,3 @@ class Voronoi:
             if p0 and p1:
                 res.append((p0.x, p0.y, p1.x, p1.y))
         return res
-
-    def get_points(self, x=123123123):
-        res = []
-        for x1, i, p in self.points.pq:
-            if p.x < x:
-                res.append(p)
-        return res
-
-    def get_events(self, x=123123123):
-        res = []
-        for x1, i, e in self.points.pq:
-            if e.p.x < x:
-                res.append(e.p)
-        return res
-
-    def get_arcs(self):
-        res = []
-        i = self.arc
-        while i is not None:
-            res.append(i)
-            i = i.pnext
-        return res
-
-    def copy(self):
-        vp = Voronoi()
-        vp.output = []
-        for out in self.output:
-            vp.output.append(out.copy())
-        vp.arc = self.arc.copy()
-        i = vp.arc
-        while i is not None:
-            if (i.s0):
-                vp.output.append(i.s0)
-            if (i.s1):
-                vp.output.append(i.s1)
-            i = i.pnext
-        vp.x0 = self.x0
-        vp.x1 = self.x1
-        vp.y0 = self.y0
-        vp.y1 = self.y1
-        dx = (vp.x1 - vp.x0 + 1) / 5.0
-        dy = (vp.y1 - vp.y0 + 1) / 5.0
-        vp.x0 = vp.x0 - dx
-        vp.x1 = vp.x1 + dx
-        vp.y0 = vp.y0 - dy
-        vp.y1 = vp.y1 + dy
-        return vp
