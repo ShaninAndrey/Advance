@@ -1,5 +1,7 @@
 import Tkinter as tk
-import sys
+import sys, time
+from threading import Timer
+import multiprocessing
 from DataType import Point
 from Voronoi import Voronoi
 from random import randint
@@ -36,6 +38,7 @@ class History:
     p = []
     const_points = []
     final_output = []
+    hints = []
     history = []
     gettedHistory = []
     curr_frame = 0
@@ -44,7 +47,7 @@ class History:
         self.height = height
 
     def updateHistoryFrame(self, frame):
-        def getHistory(const_points, final_output, x, height):
+        def getHistory(const_points, final_output, p, height):
             def appendBeachLine(history, points, x2, height):
                 last_x = 0.
                 beach_line = []
@@ -113,10 +116,12 @@ class History:
 
             points = []
             history = []
+            x = p[0]
             for point in const_points:
                 if point[0] < x:
                     points.append(Point(point[0], point[1]))
             history.append(DrawedItem((x, -123123, x, 123123), Const.GET_LINE_TYPE(), Const.GET_BORDER_COLOR()))
+            history.append(DrawedItem(p[1], Const.GET_POINT_TYPE(), Const.GET_BORDER_COLOR()))
             beach_line = appendBeachLine(history, points, x, height)
             appendLinesVSBeachLine(history, final_output, beach_line)
             return history
@@ -133,6 +138,15 @@ class History:
         else:
             self.history[frame] = getHistory(self.const_points, self.final_output, self.p[frame - 1], self.height)
     def updateHistory(self, const_points):
+        def getHint(event):
+            res = "X: " + "{0:.2f}".format(event.x) + "\n"
+            try:
+                tmp = event.a
+                res = res + "Type: Circle\n"
+            except:
+                res = res + "Type: Side\n"
+            res = res + str(event) + "\n--------------------------------------------\n\n\n"
+            return res
         def getFinalOutput(points):
             vp = Voronoi(points)
             while vp.process():
@@ -145,13 +159,18 @@ class History:
         self.const_points = const_points
         vp = Voronoi(const_points)
         self.p = []
+        self.hints = ['Points are initialised\n--------------------------------------------\n\n\n']
         while True:
             res = vp.process()
             if res is not None:
-                self.p.append(res.x)
+                try:
+                    self.p.append((res.x, res.p))
+                except:
+                    self.p.append((res.x, res))
+                self.hints.append(getHint(res))
             else:
                 break
-
+        self.hints.append('Voronnoi is builded. Congratulations!!! ;)\n--------------------------------------------\n\n\n')
         self.history = [None for i in range(len(self.p) + 2)]
         self.gettedHistory = [False for i in range(len(self.p) + 2)]
         self.updateHistoryFrame(0)
@@ -167,7 +186,7 @@ class History:
     def getCurrFrame(self):
         if len(self.history) < 1:
             return []
-        return self.history[self.curr_frame]
+        return self.history[self.curr_frame], self.hints[self.curr_frame]
 
     def getNextFrame(self):
         if 1 + self.curr_frame < len(self.history):
@@ -208,7 +227,7 @@ class Canvas:
     def clear_lines(self):
         for item in self.to_delete:
             self.w.delete(item)
-    def draw_items(self, items):
+    def drawItems(self, items):
         self.clear_lines()
         self.drawFrame(items)
     def drawFrame(self, items):
@@ -221,14 +240,14 @@ class Canvas:
         try:
             self.to_delete.append(self.w.create_oval(point[0] - self.RADIUS,
                                                      point[1] - self.RADIUS,
-                                                     point[0] - self.RADIUS,
-                                                     point[1] - self.RADIUS,
+                                                     point[0] + self.RADIUS,
+                                                     point[1] + self.RADIUS,
                                                      fill=fill))
         except:
             self.to_delete.append(self.w.create_oval(point.x - self.RADIUS,
                                                      point.y - self.RADIUS,
-                                                     point.x - self.RADIUS,
-                                                     point.y - self.RADIUS,
+                                                     point.x + self.RADIUS,
+                                                     point.y + self.RADIUS,
                                                      fill=fill))
     def drawLine(self, line, fill):
         try:
@@ -245,7 +264,7 @@ class MainWindow:
     canvas = None
 
     width = 1000
-    height = 600
+    height = 900
 
     # flag to lock the canvas when drawn
     LOCK_FLAG = False
@@ -273,7 +292,7 @@ class MainWindow:
         self.frmButton = tk.Frame(self.master, width=50)
         self.frmButton.pack(side='right', expand=True)
 
-        self.labelRandomPoints = tk.Label(self.frmButton, text='Number of random points' ,width=35, height=1)
+        self.labelRandomPoints = tk.Label(self.frmButton, text='Number of random points', width=35, height=1)
         self.labelRandomPoints.pack()
         self.textRandomPoints = tk.Text(self.frmButton, width=4, height=1, wrap=tk.WORD)
         self.textRandomPoints.insert(1.0, "50")
@@ -283,6 +302,9 @@ class MainWindow:
         self.btnClear = tk.Button(self.frmButton, text='Clear', width=25, command=self.onClickClear)
         self.btnClear.pack()
 
+        self.hints = tk.Text(self.frmButton, width=35, height=50, bg='gray')
+        self.hints.pack(side=tk.BOTTOM, expand=True, fill='both')
+        self.hints.config(state=tk.DISABLED)
 
         self.history = History(self.height)
 
@@ -293,35 +315,29 @@ class MainWindow:
             y = randint(30, self.height - 30)
             self.canvas.addPoint(x, y, Const.GET_CONST_POINTS_COLOR())
 
+    def updateFrame(self, func):
+        if not self.LOCK_FLAG:
+            self.history.updateHistory(self.canvas.getPoints())
+        self.LOCK_FLAG = True
+        frame, hint = func()
+        self.canvas.drawItems(frame)
+        self.hints.config(state=tk.NORMAL)
+        self.hints.insert(1.0, hint)
+        self.hints.config(state=tk.DISABLED)
+        self.history.checkNearesFrames()
+
     def firstStep(self, event=None):
-        if not self.LOCK_FLAG:
-            self.history.updateHistory(self.canvas.getPoints())
-        self.LOCK_FLAG = True
-        self.canvas.draw_items(self.history.getFirstFrame())
-        self.history.checkNearesFrames()
+        self.updateFrame(self.history.getFirstFrame)
     def prevStep(self, event=None):
-        if not self.LOCK_FLAG:
-            self.history.updateHistory(self.canvas.getPoints())
-        self.LOCK_FLAG = True
-        self.canvas.draw_items(self.history.getPrevFrame())
-        self.history.checkNearesFrames()
+        self.updateFrame(self.history.getPrevFrame)
     def nextStep(self, event=None):
-        if not self.LOCK_FLAG:
-            self.history.updateHistory(self.canvas.getPoints())
-        self.LOCK_FLAG = True
-        self.canvas.draw_items(self.history.getNextFrame())
-        self.history.checkNearesFrames()
+        self.updateFrame(self.history.getNextFrame)
     def lastStep(self, event=None):
-        if not self.LOCK_FLAG:
-            self.history.updateHistory(self.canvas.getPoints())
-        self.LOCK_FLAG = True
-        self.canvas.draw_items(self.history.getLastFrame())
-        self.history.checkNearesFrames()
+        self.updateFrame(self.history.getLastFrame)
 
     def onClickClear(self):
         self.LOCK_FLAG = False
         self.canvas.clearAll()
-
     def onDoubleClick(self, event):
         if not self.LOCK_FLAG:
             self.canvas.addPoint(event.x, event.y, Const.GET_CONST_POINTS_COLOR())

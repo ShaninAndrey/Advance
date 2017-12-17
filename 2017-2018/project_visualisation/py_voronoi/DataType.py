@@ -9,7 +9,7 @@ class Point:
         self.x = x
         self.y = y
     def __str__(self):
-        return "(" + str(self.x) + ", " + str(self.y) + ")"
+        return "Point(" + "{0:.2f}".format(self.x) + ", y=" + "{0:.2f}".format(self.y) + ")"
     def __repr__(self):
         return str(self)
     def copy(self):
@@ -28,7 +28,7 @@ class Event:
         self.valid = True
 
     def __str__(self):
-        return "(" + str(self.x) + ", " + str(self.p) + ", " + str(self.a) + ", " + str(self.valid) + ")"
+        return str(self.p) + "\n" + str(self.a) + "\nis_valid: " + str(self.valid)
     def __repr__(self):
         return str(self)
 
@@ -49,7 +49,7 @@ class Arc:
         self.s1 = None
 
     def __str__(self):
-        return "Arc(" + str(self.s0) + ", " + str(self.s1) + ")"
+        return str(self.s0) + "\n" + str(self.s1)
 
     def copy(self, a=None):
         arc = Arc(self.p.copy())
@@ -86,6 +86,9 @@ class Segment:
             segm.end = self.end.copy()
         segm.done = self.done
         return segm
+
+    def __str__(self):
+        return "Segm(" + str(self.start) + ", " + str(self.end) + ")"
 
 class PriorityQueue:
     def __init__(self):
