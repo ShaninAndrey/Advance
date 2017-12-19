@@ -4,6 +4,7 @@ import math
 from DataType import Point, Event, Arc, Segment, PriorityQueue
 
 class Voronoi:
+    eps = 0.00000001
     def __init__(self, points):
         self.output = [] # list of line segment
         self.arc = None  # binary tree for parabola arcs
@@ -36,8 +37,9 @@ class Voronoi:
         self.y1 = self.y1 + dy
 
     def process(self):
+        self.print_debug()
         if not self.points.empty():
-            if not self.event.empty() and (self.event.top().x <= self.points.top().x):
+            if not self.event.empty() and (self.event.top().x + self.eps <= self.points.top().x):
                 return self.process_event() # handle circle event
             else:
                 return self.process_point() # handle site event
@@ -92,6 +94,7 @@ class Voronoi:
             i = self.arc
             while i is not None:
                 flag, z = self.intersect(p, i)
+                print (flag, z)
                 if flag:
                     # new parabola intersects arc i
                     flag, zz = self.intersect(p, i.pnext)
@@ -100,6 +103,9 @@ class Voronoi:
                         i.pnext = i.pnext.pprev
                     else:
                         i.pnext = Arc(i.p, i)
+                    # if not flag:
+                    #     if i.pprev is not None:
+                    #         i.pprev.pnext = Arc()
                     i.pnext.s1 = i.s1
 
                     # add p between i and i.pnext
@@ -119,8 +125,11 @@ class Voronoi:
 
                     # check for new circle events around the new arc
                     self.check_circle_event(i, p.x)
+                    print ("check_event i")
                     self.check_circle_event(i.pprev, p.x)
+                    print ("check_event i.pprev")
                     self.check_circle_event(i.pnext, p.x)
+                    print ("check_event i.pnext")
 
                     return
                         
@@ -143,10 +152,9 @@ class Voronoi:
 
     def check_circle_event(self, i, x0):
         # look for a new circle event for arc i
-        if (i.e is not None) and (i.e.x  <> self.x0):
+        if (i.e is not None) and (i.e.x  != self.x0):
             i.e.valid = False
         i.e = None
-
         if (i.pprev is None) or (i.pnext is None): return
 
         flag, x, o = self.circle(i.pprev.p, i.p, i.pnext.p)
@@ -155,8 +163,24 @@ class Voronoi:
             self.event.push(i.e)
 
     def circle(self, a, b, c):
+        bx = b.x
+        by = b.y
+        ax = a.x - bx
+        ay = a.y - by
+        cx = c.x - bx
+        cy = c.y - by
+        d = 2 * (ax * cy - ay * cx)
+        # if (d >= 0.0000000001):
+        #     return
+        # ha = ax * ax + ay * ay
+        # hc = cx * cx + cy * cy
+        # x = (cy * ha - ay * hc) / d
+        # y = (ax * hc - cx * ha) / d
+        # ycenter = y + by
         # check if bc is a "right turn" from ab
-        if ((b.x - a.x)*(c.y - a.y) - (c.x - a.x)*(b.y - a.y)) > 0: return False, None, None
+        print (a, b, c)
+        if ((b.x - a.x)*(c.y - a.y) - (c.x - a.x)*(b.y - a.y)) < 0: return False, None, None
+        print ("asd")
 
         # Joseph O'Rourke, Computational Geometry in C (2nd ed.) p.189
         A = b.x - a.x
@@ -214,7 +238,7 @@ class Voronoi:
             z0 = 2.0 * (p0.x - l)
             z1 = 2.0 * (p1.x - l)
 
-            a = 1.0/z0 - 1.0/z1;
+            a = 1.0/z0 - 1.0/z1
             b = -2.0 * (p0.y/z0 - p1.y/z1)
             c = 1.0 * (p0.y**2 + p0.x**2 - l**2) / z0 - 1.0 * (p1.y**2 + p1.x**2 - l**2) / z1
 
@@ -249,3 +273,14 @@ class Voronoi:
             if p0 and p1:
                 res.append((p0.x, p0.y, p1.x, p1.y))
         return res
+
+    def print_debug(self):
+        arc = self.arc
+        str_ = ""
+        while arc is not None:
+            if arc.pprev is not None:
+                str_ = str_ + "(((" + str(arc.pprev.p) + "))), "
+            str_ = str_ + str(arc.p) + ",  "
+            arc = arc.pnext
+        print (str_)
+        print (len(self.points.pq), len(self.event.pq))
