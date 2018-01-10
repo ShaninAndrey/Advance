@@ -1,136 +1,165 @@
 import math
-import sys
-from random import randint
 
 
-def line(p1, p2):
-    if not (p1 > p2):
-        p1, p2 = p2, p1
-    a = p2[1] - p1[1]
-    b = p1[0] - p2[0]
-    return (a, b, -a * p2[0] - b * p2[1])
+class point:
+    __slots__ = ['x', 'y', 'ind']
+
+    # get 2 coordinates, create point with these coordinates
+    def __init__(self, x, y, ind=-1):
+        self.x = x
+        self.y = y
+        self.ind = ind
+
+    def __gt__(self, other):
+        return self.x > other.x or self.x == other.x and self.y > other.y
 
 
-def get_res(l, pp):
-    return l[0] * pp[0] + l[1] * pp[1] + l[2]
+class line:
+    __slots__ = ['a', 'b', 'c']
 
-a = []
-up = []
-down = []
+    # get 2 points, construct line based on these points
+    def __init__(self, p1, p2):
+        if not (p1 > p2):
+            p1, p2 = p2, p1
+        self.a = p2.y - p1.y
+        self.b = p1.x - p2.x
+        self.c = -self.a * p2.x - self.b * p2.y
+
+    # takes side of point pp with relation of line
+    def get_res(self, pp):
+        return self.a * pp.x + self.b * pp.y + self.c
+
+    def on_diff_sides(self, p1, p2):
+        return self.get_res(p1) * self.get_res(p2) < 0
+
+    def is_parallel(self, other):
+        return self.b * other.a == self.a * other.b
 
 
-def convex_hull():
-    if (n <= 1):
-        return
-    b = []
-    for aa in a:
-        b.append(aa)
-    b.sort()
-    p1 = b[0]
-    p2 = b[n - 1]
-    up.append(p1)
-    down.append(p1)
-    for i in range(1, n):
-        if (i == n - 1 or get_res(line(p1, b[i]), p2) > 0):
-            while (len(up) >= 2):
-                if (get_res(line(up[-2], up[-1]), b[i]) <= 0):
-                    up.pop()
+class convex_hull:
+    __slots__ = ['up', 'down']
+
+    # creates convex hull with gracham algorithm
+    # see similar realisation and algorithm there http://e-maxx.ru/algo/convex_hull_graham
+    def __init__(self, points):
+        self.up = []
+        self.down = []
+        n = len(points)
+
+        if (n <= 1):
+            return
+        sorted_points = []
+        for point in points:
+            sorted_points.append(point)
+        sorted_points.sort()
+        start_point = sorted_points[0]
+        end_point = sorted_points[n - 1]
+        self.up.append(start_point)
+        self.down.append(start_point)
+
+        for i in range(1, n):
+            if (i == n - 1 or line(start_point, sorted_points[i]).get_res(end_point) > 0):
+                while (len(self.up) >= 2):
+                    if (line(self.up[-2], self.up[-1]).get_res(sorted_points[i]) <= 0):
+                        self.up.pop()
+                    else:
+                        break
+                self.up.append(sorted_points[i])
+            if (i == n - 1 or line(start_point, sorted_points[i]).get_res(end_point) < 0):
+                while (len(self.down) >= 2):
+                    if (line(self.down[-2], self.down[-1]).get_res(sorted_points[i]) >= 0):
+                        self.down.pop()
+                    else:
+                        break
+                self.down.append(sorted_points[i])
+        self.down.reverse()
+
+    # find such points P1 and P2, that line l id exactly between points P1 and P2
+    # return idexes of such points, of (0, 0) if such points aren't exists
+    # works with O(n * log(n))
+    def find_points_on_diff_sides_of_line(self, l):
+        # find such point P, that line ln id exactly between points P and pp
+        # return index of point P, or 0 if such point isn't exists
+        #
+        # ------------------------------------ for developers ------------------------------------
+        # use bynary search with related of current line based on 2 neighbor points on convex hull and initial point
+        def get(side, ln, p):
+            if (len(side) <= 2):
+                return 0
+            l = 1
+            r = len(side) - 1
+            while (l + 1 < r):
+                mid = (l + r) / 2
+                if (ln.on_diff_sides(side[mid], p)):
+                    return side[mid].ind
+                if (ln.on_diff_sides(side[mid + 1], p)):
+                    return side[mid + 1].ind
+                tmp = line(side[mid], side[mid + 1])
+                if (ln.is_parallel(tmp)):
+                    return 0
+                if (math.fabs(ln.get_res(side[mid])) <
+                        math.fabs(ln.get_res(side[mid + 1]))):
+                    r = mid
                 else:
-                    break
-            up.append(b[i])
-        if (i == n - 1 or get_res(line(p1, b[i]), p2) < 0):
-            while (len(down) >= 2):
-                if (get_res(line(down[-2], down[-1]), b[i]) >= 0):
-                    down.pop()
-                else:
-                    break
-            down.append(b[i])
-    down.reverse()
-
-
-def chk(l, p1, p2):
-    return get_res(l, p1) * get_res(l, p2) < 0
-
-
-def get(vv, ln, pp):
-    if (len(vv) <= 2):
-        return 0
-    l = 1
-    r = len(vv) - 1
-    while (l + 1 < r):
-        mid = (l + r) / 2
-        if (chk(ln, vv[mid], pp)):
-            return vv[mid][2]
-        if (chk(ln, vv[mid + 1], pp)):
-            return vv[mid + 1][2]
-        tmp = line(vv[mid], vv[mid + 1])
-        if (tmp[1] * ln[0] == tmp[0] * ln[1]):
+                    l = mid + 1
+            if (ln.on_diff_sides(p, side[ln])):
+                return side[ln].ind
             return 0
-        if (math.fabs(get_res(ln, vv[mid])) <
-                math.fabs(get_res(ln, vv[mid + 1]))):
-            r = mid
-        else:
-            l = mid + 1
-    if (chk(ln, pp, vv[l])):
-        return vv[l][2]
-    return 0
+
+        if (l.on_diff_sides(self.up[0], self.up[-1])):
+            return (self.up[0].ind, self.up[-1].ind)
+        if (l.get_res(self.up[0]) > 0):
+            return (get(self.up, l, self.up[0]), self.up[0].ind)
+        if (l.get_res(self.up[-1]) > 0):
+            return (get(self.up, l, self.up[-1]), self.up[-1].ind)
+        if (l.get_res(self.up[0]) < 0):
+            return (get(self.down, l, self.up[0]), self.up[0].ind)
+        if (l.get_res(self.up[-1]) < 0):
+            return (get(self.down, l, self.up[-1]), self.up[-1].ind)
+        if (len(self.up) == 2 or len(self.down) == 2):
+            return (0, 0)
+        return (self.up[1].ind, self.down[1].ind)
 
 
-def check(l):
-    if (chk(l, up[0], up[-1])):
-        return (up[0][2], up[-1][2])
-    if (get_res(l, up[0]) > 0):
-        return (get(up, l, up[0]), up[0][2])
-    if (get_res(l, up[-1]) > 0):
-        return (get(up, l, up[-1]), up[-1][2])
-    if (get_res(l, up[0]) < 0):
-        return (get(down, l, up[0]), up[0][2])
-    if (get_res(l, up[-1]) < 0):
-        return (get(down, l, up[-1]), up[-1][2])
-    if (len(up) == 2 or len(down) == 2):
-        return (0, 0)
-    return (up[1][2], down[1][2])
-
-
-def simple_check(l, xx, yy):
+# checks if points xx and yy are on different sides of line l
+# works with O(n ^ 2)
+# used only for debugging
+def simple_check(points, l, xx, yy):
     if (xx == 0):
         aa = 0
         bb = 0
         for i in range(n):
-            if (get_res(l, a[i]) < 0):
+            if (l.get_res(points[i]) < 0):
                 aa = 1
-            if (get_res(l, a[i]) > 0):
+            if (l.get_res(points[i]) > 0):
                 bb = 1
         return not (aa and bb)
-    return chk(l, a[xx - 1], a[yy - 1])
+    return l.on_diff_sides(points[xx - 1], points[yy - 1])
 
-n = int(raw_input())
-for i in range(n):
-    f, g = raw_input().split()
-    # f = randint(-1000000000, 1000000000)
-    # g = randint(-1000000000, 1000000000)
-    a.append((int(f), int(g), i + 1))
 
-convex_hull()
+if __name__ == "__main__":
+    def read_all(points, lines):
+        n = int(raw_input())
+        for i in range(n):
+            f, g = raw_input().split()
+            points.append(point(int(f), int(g), i + 1))
 
-m = int(raw_input())
+        m = int(raw_input())
+        for i in range(m):
+            x1, y1, x2, y2 = raw_input().split()
+            lines.append(line(point(int(x1), int(y1)), point(int(x2), int(y2))))
 
-for i in range(m):
-    x1, y1, x2, y2 = raw_input().split()
-    # x1 = randint(-1000000000, 1000000000)
-    # x2 = randint(-1000000000, 1000000000)
-    # y1 = randint(-1000000000, 1000000000)
-    # y2 = randint(-1000000000, 1000000000)
-    l = line((int(x1), int(y1)), (int(x2), int(y2)))
-    if (n < 2):
-        print 0
-        continue
-    res = check(l)
-    if (res[0] == 0):
-        print 0
-    else:
-        print res[0], res[1]
+    points = []
+    lines = []
+    read_all(points, lines)
+    hull = convex_hull(points)
 
-    # if not(simple_check(l, res[0], res[1])):
-    #     print("No No No")
-    #     sys.exit(0)
+    for l in lines:
+        if (len(points) < 2):
+            print 0
+            continue
+        res = hull.find_points_on_diff_sides_of_line(l)
+        if (res[0] == 0):
+            print 0
+        else:
+            print res[0], res[1]
